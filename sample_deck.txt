@@ -1,0 +1,38 @@
+Pokémon: 8
+3 Xatu PAR 72
+1 Fezandipiti ex SFA 84
+4 Jigglypuff MEW 39
+1 Dedenne ex PAL 93
+3 Natu PAR 71
+2 Wigglytuff ex MEW 40
+1 Wigglytuff PAL 84
+1 Mew ex MEW 193
+
+Trainer: 21
+1 Switch SVI 194
+2 Boss's Orders PAL 265
+1 Counter Catcher PAR 160
+1 Super Rod PAL 276
+3 Nest Ball SVI 181 PH
+1 Switch SVI 194 PH
+3 Iono PAL 269
+2 Night Stretcher SSP 251
+1 Gravity Mountain SSP 177
+1 Professor Turo's Scenario PAR 257
+3 Ultra Ball SVI 196 PH
+1 Hero's Cape TEF 152
+1 Black Belt's Training PRE 96 PH
+1 Black Belt's Training PRE 96 PH
+1 Energy Search SVI 172 PH
+2 Professor's Research SVI 240
+2 Buddy-Buddy Poffin TWM 223
+1 Rigid Band MEW 165 PH
+1 Earthen Vessel PAR 163 PH
+3 Arven SVI 166
+1 Rescue Board PRE 126 PH
+
+Energy: 2
+8 Basic {P} Energy Energy 22
+3 Therapeutic Energy PAL 193
+
+Total Cards: 60
