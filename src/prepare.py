@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import ast
+import re
 
 DATA_PATH = 'data/cards.csv'
 stored_data = 'data/pokemon_cleaned.csv'
@@ -27,8 +28,9 @@ def prep_card_data(dataset):
     attacks = get_attacks(dataset)
     dataset = merge_abilities_and_attacks(abilities,attacks,dataset)
     dataset = stage_and_setup_time(dataset)
+    dataset = create_prize_features(dataset)
     dataset = drop_dupes(dataset)
-    # dataset = arrange_columns(dataset)
+    dataset = arrange_columns(dataset)
     return dataset
 
 
@@ -200,17 +202,62 @@ def stage_and_setup_time(dataset):
     return dataset
 
 
-###########################################################################
-# Create features to indicate if a card is ex and or tera typed.
-# df_pokemon_cards['is_ex'] = df_pokemon_cards['subtypes'].apply(lambda x: 1 if 'ex' in x else 0)
-# df_pokemon_cards['is_tera'] = df_pokemon_cards['subtypes'].apply(lambda x: 1 if 'Tera' in x else 0)
+def extract_prize_value(rule):
+    # Handle missing or empty rule values
+    if rule is None or rule == '' or rule == []:
+        return 1
+    
+    # If the rule is a stringified list, convert it to an actual list
+    if isinstance(rule, str):
+        try:
+            rule = ast.literal_eval(rule)
+        except Exception:
+            return 1
+
+    # At this point, rule should be a list
+    if isinstance(rule, list):
+        for r in rule:
+            match = re.search(r'takes (\d+) Prize', r)
+            if match:
+                return int(match.group(1))
+
+    return 1
 
 
+def create_prize_features(dataset):
+    '''
+    
+    '''
+    dataset['primary_type'] = dataset['types'].apply(
+    lambda x: ast.literal_eval(x)[0] if pd.notnull(x) else x)
+    dataset['is_ex'] = dataset['subtypes'].apply(lambda x: 1 if 'ex' in x else 0)
+    dataset['is_tera'] = dataset['subtypes'].apply(lambda x: 1 if 'Tera' in x else 0)
+    dataset['prize_card_value'] = dataset['rules'].apply(extract_prize_value)
+    # dataset['release_date'] = dataset['set'].apply(lambda x: x.get('releaseDate') if isinstance(x, dict) else None)
+    # dataset['release_date'] = pd.to_datetime(dataset['release_date'], errors='coerce')
+    # dataset['release_year'] = dataset['release_date'].dt.year
+    # Create the feature flag for bench damage immunity
+    dataset['set_name'] = dataset['set'].apply(lambda x: x.get('id') if isinstance(x,dict) else None)
+    dataset.rename(columns={'number': 'set_number'},inplace=True)
+    dataset['set_number'] = dataset['set_number'].astype('int')
+    dataset['is_immune_to_bench_damage'] = dataset['rules'].apply(
+        lambda x: int(any('As long as this Pokémon is on your Bench, prevent all damage done' in rule for rule in x)) if isinstance(x, list) else 0
+        )
+    dataset['attack_damage_amount'] = dataset['attack_damage'].str.extract('([0-9]*)')
+    dataset['attack_damage_modifier'] = dataset['attack_damage'].str.extract('([+-×])')
+    dataset['cards_needed_for_attack'] = dataset['setup_time'] + dataset['attack_energy_cost']
+    dataset['attack_damage_amount'] = pd.to_numeric(dataset['attack_damage_amount'], errors='coerce')
+    dataset['is_coin_flip'] = dataset['attack_text'].str.contains('coin')
+    dataset['damage_per_energy'] = np.where(dataset['attack_energy_cost'] == 0,
+                                                     np.nan,  # or 0 if you prefer
+                                                     round(dataset['attack_damage_amount'] / dataset['attack_energy_cost'], 2)
+                                                     )
+
+    dataset['damage_per_energy'] = pd.to_numeric(dataset['damage_per_energy'], errors='coerce')
+
+    return dataset
 
 
-
-
-############################################################################
 def drop_dupes(dataset):
     '''
     Removes duplicate cards from the dataset.
@@ -225,39 +272,50 @@ def drop_dupes(dataset):
     
     '''
     # Remove rarity duplicates
-    dataset = dataset.drop_duplicates(subset=['name', 'attack_text', 'hp', 'ability_text'],keep='first'
+    dataset = dataset.drop_duplicates(subset=['name', 'attack_name', 'hp', 'ability_name'],keep='first'
                                      ).reset_index(drop=True)
 
     return dataset
 
 
-# def arrange_columns(dataset):
-#     '''
-#     Rearranges columns
+def arrange_columns(dataset):
+    '''
+    Rearranges columns
 
-#     Parameters
-#     ----------
-#     dataset 
+    Parameters
+    ----------
+    dataset 
     
-#     Returns
-#     -------
-#     dataset
-#     '''
-#     dataset = dataset[['id',
-#                        'supertype',
-#                        'subtypes',
-#                        'types',
-#                        'name',
-#                        'evolves_from',
-#                        'hp',
-#                        'retreat_cost',
-#                        'abilities',
-#                        'attacks',
-#                        'rules',
-#                        'set',
-#                        'number',
-#                        'regulation_mark',
-#                        'legalities',
-#                        'standard_legality']]
+    Returns
+    -------
+    dataset
+    '''
+    dataset = dataset[['id',
+    'set_name',
+    'set_number',
+    'supertype',
+    'name',
+    'stage',
+    'is_ex',
+    'is_tera',
+    'primary_type',
+    'evolves_from',
+    'hp',
+    'ability_name',
+    'ability_text',
+    'attack_name',
+    'attack_text',
+    'attack_damage_amount',
+    'attack_damage_modifier',
+    'attack_cost',
+    'cards_needed_for_attack',
+    'attack_energy_cost',
+    'is_coin_flip',
+    'damage_per_energy',
+    'retreat_cost',
+    'prize_card_value',
+    'setup_time',
+    'is_immune_to_bench_damage'
+    ]].sort_values(by=['set_name','set_number']).reset_index(drop=True)
 
-#     return dataset
+    return dataset
