@@ -2,14 +2,20 @@ import pandas as pd
 import numpy as np
 import ast
 import re
+import os
 
 DATA_PATH = 'data/cards.csv'
-stored_data = 'data/pokemon_cleaned.csv'
+STORED_DATA = 'data/pokemon_cleaned.csv'
 
 def prep_card_data(dataset):
     """
     Clean and process a raw Pokémon card dataset to prepare it for synergy analysis.
     """
+    global STORED_DATA
+
+    if os.path.exists(STORED_DATA):
+        return pd.read_csv(STORED_DATA)
+
     dataset = drop_features(dataset)
     dataset = rename_features(dataset)
     dataset = extract_legality(dataset)
@@ -22,6 +28,7 @@ def prep_card_data(dataset):
     dataset = create_prize_features(dataset)
     dataset = drop_dupes(dataset)
     dataset = arrange_columns(dataset)
+    dataset.to_csv(STORED_DATA, index=False)
     return dataset
 
 def drop_features(dataset):
@@ -110,6 +117,8 @@ def extract_prize_value(rule):
 
 def create_prize_features(dataset):
     dataset['primary_type'] = dataset['types'].apply(lambda x: ast.literal_eval(x)[0] if pd.notnull(x) else x)
+    dataset['is_future'] = dataset['subtypes'].apply(lambda x: 1 if 'Future' in x else 0)
+    dataset['is_ancient'] = dataset['subtypes'].apply(lambda x: 1 if 'Ancient' in x else 0)
     dataset['is_ex'] = dataset['subtypes'].apply(lambda x: 1 if 'ex' in x else 0)
     dataset['is_tera'] = dataset['subtypes'].apply(lambda x: 1 if 'Tera' in x else 0)
     dataset['prize_card_value'] = dataset['rules'].apply(extract_prize_value)
@@ -133,10 +142,10 @@ def drop_dupes(dataset):
 
 def arrange_columns(dataset):
     columns = [
-        'id', 'set_name', 'set_number', 'supertype', 'name', 'stage', 'is_ex', 'is_tera',
-        'primary_type', 'evolves_from', 'hp', 'ability_name', 'ability_text', 'attack_name',
-        'attack_text', 'attack_damage_amount', 'attack_damage_modifier', 'attack_cost',
-        'cards_needed_for_attack', 'attack_energy_cost', 'is_coin_flip', 'damage_per_energy',
-        'retreat_cost', 'prize_card_value', 'setup_time', 'is_immune_to_bench_damage'
+        'id', 'set_name', 'set_number', 'supertype', 'name', 'stage', 'is_future',
+        'is_ancient','is_ex', 'is_tera', 'primary_type', 'evolves_from', 'hp', 'ability_name',
+        'ability_text', 'attack_name', 'attack_text', 'attack_damage_amount', 'attack_damage_modifier',
+        'attack_cost', 'cards_needed_for_attack', 'attack_energy_cost', 'is_coin_flip',
+        'damage_per_energy', 'retreat_cost', 'prize_card_value', 'setup_time', 'is_immune_to_bench_damage'
     ]
     return dataset[columns].sort_values(by=['set_name', 'set_number']).reset_index(drop=True)
