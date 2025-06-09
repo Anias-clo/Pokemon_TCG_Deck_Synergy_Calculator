@@ -7,7 +7,7 @@ import os
 DATA_PATH = 'data/cards.csv'
 STORED_DATA = 'data/pokemon_cleaned.csv'
 
-def prep_card_data(dataset):
+def prep_pokemon_data(dataset):
     """
     Clean and process a raw Pokémon card dataset to prepare it for synergy analysis.
     """
