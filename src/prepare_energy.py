@@ -3,6 +3,7 @@
 import pandas as pd
 import ast
 
+
 def extract_subtype(subtype):
     '''Extract the first subtype from a list of subtypes.'''
     if not isinstance(subtype, list):
@@ -23,7 +24,7 @@ def prep_energy_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df['supertype'] == 'Energy']
 
     # Clean up name field
-    df['name'] = df['name'].str.replace(r'\\s*\\(.*?\\)', '', regex=True).str.strip()
+    df['name'] = df['name'].str.replace('Basic', '',).str.strip()
 
     # Sort by name and subtype for deduplication
     df = df.sort_values(by=['name', 'subtypes'], ascending=False)
@@ -36,13 +37,13 @@ def prep_energy_df(df: pd.DataFrame) -> pd.DataFrame:
     df.rename(columns={'number': 'set_number'}, inplace=True)
 
     # Filter by legality (Regulation Mark G or later)
-    df = df[df['regulationMark'] >= 'G'].reset_index(drop=True)
+    df = df[(df['regulationMark'] >= 'G')|(df['regulationMark'].isna())].reset_index(drop=True)
 
     # Add an ACE SPEC feature
     df['is_ace_spec'] = df['subtypes'].apply(lambda x: 1 if 'ACE SPEC' in x else 0)
 
     # Drop duplicates by name
-    # df = df.drop_duplicates(subset=['name'], keep='first').reset_index(drop=True)
+    df = df.drop_duplicates(subset=['name'], keep='first').reset_index(drop=True)
 
     # Parse subtypes from string to list
     df['subtypes'] = df['subtypes'].apply(lambda x: ast.literal_eval(x) if pd.notnull(x) else None)
@@ -66,6 +67,6 @@ def prep_energy_df(df: pd.DataFrame) -> pd.DataFrame:
              'rules',
              'set_number',
              'set_name'
-             ]]
+             ]].sort_values(by=['subtype','name']).reset_index(drop=True)
 
     return df
